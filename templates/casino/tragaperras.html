@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="pixel-container" style="max-width: 700px; margin: 0 auto; text-align: center;">
+    <h1 style="color: #FFD700; text-shadow: 3px 3px 0px #AA8800; margin-bottom: 20px;">CLASSIC 3-SLOT</h1>
+    
+    <div class="pixel-panel" style="background-color: #222; border: 4px solid #FFF; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="fichas-display" style="color: #00FFCC; margin: 0;">Fichas: {{ fichas_actuales }}</h2>
+        <div style="color: #FFF; text-align: right;">
+            Costo por giro: <strong style="color: #FF0055;">{{ costo_giro }}</strong> fichas
+        </div>
+    </div>
+
+    <div id="messages-container" style="margin-bottom: 20px;"></div>
+
+    <!-- MÁQUINA TRAGAPERRAS CSS (Pixel Art estricto, sin border-radius) -->
+    <div class="machine-casing" style="background-color: #DD2222; padding: 30px; border: 8px solid #880000; box-shadow: inset 10px 10px 0px rgba(255,255,255,0.2), 10px 10px 0px #000; margin-bottom: 30px; position: relative;">
+        
+        <!-- Pantalla de cristal -->
+        <div class="slot-screen" style="background-color: #111; border: 6px solid #444; padding: 20px; display: flex; justify-content: center; gap: 20px; box-shadow: inset 0px 10px 20px #000;">
+            
+            {% for i in "123" %}
+                <!-- RODILLO {{ forloop.counter }} -->
+                <div class="slot-window" style="width: 100px; height: 120px; overflow: hidden; background-color: #FFF; border: 4px solid #888; position: relative; box-shadow: inset 0px 10px 10px rgba(0,0,0,0.5), inset 0px -10px 10px rgba(0,0,0,0.5);">
+                    <div id="slot-reel-{{ forloop.counter }}" class="slot-reel">
+                        <!-- Símbolos falsos para el efecto de giro -->
+                        <div class="symbol">💎</div>
+                        <div class="symbol">🍉</div>
+                        <div class="symbol">🍒</div>
+                        <div class="symbol">🔔</div>
+                        <div class="symbol">🍋</div>
+                        <div class="symbol">⭐</div>
+                        <div class="symbol">💎</div>
+                        <div class="symbol">🍉</div>
+                        <div class="symbol">🍒</div>
+                        <div class="symbol">🔔</div>
+                        <div class="symbol">🍋</div>
+                        <div class="symbol">⭐</div>
+                        <div class="symbol">💎</div>
+                        <div class="symbol">🍉</div>
+                        <div class="symbol">🍒</div>
+                        <div class="symbol">🔔</div>
+                        <div class="symbol">🍋</div>
+                        <div class="symbol">⭐</div>
+                        <!-- Símbolo final real -->
+                        <div id="final-symbol-{{ forloop.counter }}" class="symbol final-symbol" style="color: #000; text-shadow: 2px 2px 0px rgba(0,0,0,0.2);">
+                            {% if resultado %}
+                                {% if forloop.counter == 1 %}{{ resultado.0 }}
+                                {% elif forloop.counter == 2 %}{{ resultado.1 }}
+                                {% else %}{{ resultado.2 }}
+                                {% endif %}
+                            {% else %}
+                                ❓
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+
+        </div>
+        <!-- Decoración de la máquina -->
+        <div style="margin-top: 15px; color: #FFF; font-size: 0.8em; letter-spacing: 2px; text-shadow: 1px 1px 0px #000;">INSERT COIN TO PLAY</div>
+    </div>
+
+    <form id="slots-form" method="post">
+        {% csrf_token %}
+        <button type="submit" id="btn-girar" class="pixel-btn-arcade" style="background-color: #FF0055;" {% if fichas_actuales < costo_giro %}disabled{% endif %}>
+            TIRAR DE LA PALANCA
+        </button>
+    </form>
+
+    <div id="tienda-link-container" style="margin-top: 20px; display: {% if fichas_actuales < costo_giro %}block{% else %}none{% endif %};">
+        <a href="{% url 'casino:tienda' %}" class="pixel-btn-arcade" style="display: inline-block; background-color: #00FFCC; color: #000; padding: 15px 30px; text-decoration: none;">
+            COMPRAR FICHAS EN LA TIENDA
+        </a>
+    </div>
+
+    <div style="margin-top: 30px; border-top: 2px dashed #555; padding-top: 20px;">
+        <h3 style="color: #AAA;">Tabla de Pagos (x3 Iguales)</h3>
+        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; color: #FFF;">
+            {% for simbolo, valor in premios.items %}
+                <div style="background-color: #222; padding: 10px; border: 2px solid #444; min-width: 80px;">
+                    <span style="font-size: 1.5em; display: block; margin-bottom: 5px;">{{ simbolo }}</span> {{ valor }}
+                </div>
+            {% endfor %}
+        </div>
+        <p style="color: #888; font-size: 0.8em; margin-top: 10px;">(2 símbolos iguales te devuelven la apuesta de {{ costo_giro }})</p>
+    </div>
+</div>
+
+<style>
+    /* Animaciones Generales */
+    @keyframes fadeInPanel {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    .pixel-container {
+        animation: fadeInPanel 0.4s ease-out forwards;
+    }
+
+    @keyframes dropMessage {
+        0% { transform: translateY(-50px); opacity: 0; }
+        100% { transform: translateY(0); opacity: 1; }
+    }
+    .message-animado {
+        animation: dropMessage 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+
+    /* Estilos de los Rodillos (Reels) */
+    .slot-reel {
+        display: flex;
+        flex-direction: column;
+        /* Por defecto, muestra el último símbolo de la tira */
+        transform: translateY(calc(-100% + 120px));
+    }
+
+    .symbol {
+        width: 100px;
+        height: 120px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 4em;
+        flex-shrink: 0; /* Evitar que flexbox aplaste los elementos */
+    }
+
+    /* Animación Giro Real de Rodillos */
+    @keyframes spinReel {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(calc(-100% + 120px)); }
+    }
+
+    /* Retraso en cada rodillo para efecto cascada (sin blur) */
+    .anim-spin-1 { animation: spinReel 1.5s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-spin-2 { animation: spinReel 2.0s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-spin-3 { animation: spinReel 2.5s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('slots-form');
+        const btnGirar = document.getElementById('btn-girar');
+        const messagesContainer = document.getElementById('messages-container');
+        const fichasDisplay = document.getElementById('fichas-display');
+        const tiendaLinkContainer = document.getElementById('tienda-link-container');
+        
+        const reel1 = document.getElementById('slot-reel-1');
+        const reel2 = document.getElementById('slot-reel-2');
+        const reel3 = document.getElementById('slot-reel-3');
+        
+        const finalSym1 = document.getElementById('final-symbol-1');
+        const finalSym2 = document.getElementById('final-symbol-2');
+        const finalSym3 = document.getElementById('final-symbol-3');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            btnGirar.disabled = true;
+            btnGirar.innerText = "GIRANDO...";
+            
+            // Limpiar mensajes
+            messagesContainer.innerHTML = '';
+            tiendaLinkContainer.style.display = 'none';
+
+            // Descuento síncrono para respuesta instantánea
+            let costeGiro = 10;
+            const displayFichas = document.getElementById('global-fichas-display');
+            if (displayFichas) {
+                let current = parseInt(displayFichas.getAttribute('data-fichas')) || 0;
+                if(window.actualizarFichasGlobales) window.actualizarFichasGlobales(current - costeGiro);
+            }
+            
+            // Quitar clases de animación para reiniciar
+            reel1.classList.remove('anim-spin-1');
+            reel2.classList.remove('anim-spin-2');
+            reel3.classList.remove('anim-spin-3');
+            
+            // Pequeño hack para forzar el reflow
+            void reel1.offsetWidth;
+            void reel2.offsetWidth;
+            void reel3.offsetWidth;
+
+            const formData = new FormData(form);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.estado === 'error') {
+                    if (data.mensajes) {
+                        let msgsHtml = '';
+                        data.mensajes.forEach(msg => {
+                            msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid #FF0000; background-color: #111; color: #FF0000; margin-bottom: 10px;">${msg.texto}</div>`;
+                        });
+                        messagesContainer.innerHTML = msgsHtml;
+                    } else if (data.error) {
+                        messagesContainer.innerHTML = `<div class="message-animado" style="padding: 15px; border: 4px solid #FF0000; background-color: #111; color: #FF0000; margin-bottom: 10px;">${data.error}</div>`;
+                    }
+                    
+                    // Asegurar que si hay error por saldo, se muestre el enlace
+                    tiendaLinkContainer.style.display = 'block';
+                    btnGirar.innerText = "TIRAR DE LA PALANCA";
+                } else if (data.estado === 'ok') {
+                    // Iniciar animación
+                    reel1.classList.add('anim-spin-1');
+                    reel2.classList.add('anim-spin-2');
+                    reel3.classList.add('anim-spin-3');
+                    
+                    // Asignar los símbolos reales al final del DOM
+                    finalSym1.innerText = data.resultado[0];
+                    finalSym2.innerText = data.resultado[1];
+                    finalSym3.innerText = data.resultado[2];
+                    
+                    // Actualizar el saldo al instante de tirar (sin premio todavía)
+                    fichasDisplay.innerText = 'Fichas: ' + (data.fichas_actuales - data.ganancia);
+                    
+                    // Después de que acaben de girar todos los rodillos (2.5s)
+                    setTimeout(() => {
+                        // Actualizar saldo con premio (si hay)
+                        fichasDisplay.innerText = 'Fichas: ' + data.fichas_actuales;
+                        
+                        // Actualizar saldo global final
+                        if(window.actualizarFichasGlobales) window.actualizarFichasGlobales(data.fichas_actuales);
+
+                        // Controlar visibilidad del botón tienda
+                        const costoGiro = 10;
+                        if (data.fichas_actuales < costoGiro) {
+                            tiendaLinkContainer.style.display = 'block';
+                            btnGirar.disabled = true;
+                        } else {
+                            tiendaLinkContainer.style.display = 'none';
+                            btnGirar.disabled = false;
+                        }
+                        
+                        // Mostrar mensajes
+                        if (data.mensajes) {
+                            let msgsHtml = '';
+                            data.mensajes.forEach(msg => {
+                                let bColor = msg.tag.includes('success') ? '#00FF00' : (msg.tag.includes('info') ? '#FFD700' : '#FF0000');
+                                msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid ${bColor}; background-color: #111; color: ${bColor}; margin-bottom: 10px;">${msg.texto}</div>`;
+                            });
+                            messagesContainer.innerHTML = msgsHtml;
+                        }
+                        
+                        btnGirar.innerText = "TIRAR DE LA PALANCA";
+                    }, 2500);
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                btnGirar.disabled = false;
+                btnGirar.innerText = "TIRAR DE LA PALANCA";
+            });
+        });
+    });
+</script>
+{% endblock %}

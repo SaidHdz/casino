@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="pixel-container" style="max-width: 900px; margin: 0 auto; text-align: center;">
+    <h1 style="color: #FF0055; text-shadow: 2px 2px 0px #440011; margin-bottom: 30px;">PIXEL ROULETTE</h1>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: flex-start; text-align: left;">
+        
+        <!-- PANEL IZQUIERDO: Formulario y Mensajes -->
+        <div class="left-panel" style="flex: 1; min-width: 300px;">
+            <div class="pixel-panel" style="background-color: #222; border: 4px solid #FFF; padding: 20px; margin-bottom: 20px;">
+                <p style="font-size: 0.8em; color: #AAA; margin: 0; text-align: center;">Premios: Número (x35) | Color (x2)</p>
+            </div>
+
+            <div id="messages-container" style="margin-bottom: 20px;"></div>
+
+            <div class="pixel-panel" style="background-color: #333; border: 4px solid #00FFCC; padding: 20px;">
+                <h3 style="color: #FFF; margin-top: 0; margin-bottom: 20px;">Hacer Apuesta</h3>
+                <form id="ruleta-form" method="post" style="display: flex; flex-direction: column; gap: 15px;">
+                    {% csrf_token %}
+                    
+                    <div id="form-errors" style="color: #FF0000; font-size: 0.8em;"></div>
+
+                    <div>
+                        <label style="color: #00FFCC; display: block; margin-bottom: 5px;">{{ form.tipo_apuesta.label }}</label>
+                        {{ form.tipo_apuesta }}
+                        <span id="error-tipo" style="color: #FF0000; font-size: 0.8em;"></span>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex: 1;">
+                            <label style="color: #00FFCC; display: block; margin-bottom: 5px;">{{ form.numero.label }}</label>
+                            {{ form.numero }}
+                            <span id="error-numero" style="color: #FF0000; font-size: 0.8em;"></span>
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="color: #00FFCC; display: block; margin-bottom: 5px;">{{ form.color.label }}</label>
+                            {{ form.color }}
+                            <span id="error-color" style="color: #FF0000; font-size: 0.8em;"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="color: #00FFCC; display: block; margin-bottom: 5px;">{{ form.monto.label }}</label>
+                        <div id="apuesta-visual" style="background-color: #000; color: #FFF; border: 4px solid #555; padding: 15px 10px; font-size: 2em; text-align: right; overflow: hidden; white-space: nowrap; min-height: 40px; display: flex; align-items: center; justify-content: flex-end;">20</div>
+                        <input type="hidden" id="monto_apuesta" name="monto" value="20">
+                        <span id="error-monto" style="color: #FF0000; font-size: 0.8em;"></span>
+                    </div>
+
+                    <!-- KEYPAD -->
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;">
+                        <button type="button" class="keypad-btn" onclick="addNum('1')">1</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('2')">2</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('3')">3</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('4')">4</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('5')">5</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('6')">6</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('7')">7</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('8')">8</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('9')">9</button>
+                        <button type="button" class="keypad-btn key-c" onclick="clearNum()">C</button>
+                        <button type="button" class="keypad-btn" onclick="addNum('0')">0</button>
+                        <button type="button" class="keypad-btn key-max" onclick="setMax()">MAX</button>
+                    </div>
+
+                    <button type="submit" id="btn-girar" class="pixel-btn-arcade" style="margin-top: 15px; width: 100%; background-color: #FF0055;">
+                        Girar Ruleta
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- PANEL DERECHO: Ruleta Visual y Resultados -->
+        <div class="right-panel" style="flex: 1; min-width: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            
+            <div class="ruleta-container" style="position: relative; width: 300px; height: 300px; margin-bottom: 30px;">
+                <div class="ruleta-wheel {% if resultado_numero is not None %}spin-anim{% endif %}" id="ruletaWheel" {% if rotacion_total %}style="--rotacion-final: {{ rotacion_total }}deg;"{% endif %}></div>
+                <div class="ruleta-pointer"></div>
+                <div class="ruleta-center">
+                    <span id="resultado-numero-text" class="resultado-text" style="color: {% if resultado_color == 'rojo' %}#FF0000{% elif resultado_color == 'verde' %}#00FF00{% elif resultado_color == 'negro' %}#FFF{% else %}#555{% endif %};">
+                        {% if resultado_numero is not None %}{{ resultado_numero }}{% else %}?{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <div id="resultado-panel-container" style="width: 100%;">
+                {% if resultado_numero is not None %}
+                    <div class="resultado-panel resultado-animado" style="width: 100%; text-align: center; padding: 20px; background-color: #111; border: 4px dashed {% if ganancia > 0 %}#00FFCC{% else %}#555{% endif %}; box-sizing: border-box;">
+                        <h2 style="color: #FFF; margin-top: 0;">Resultado</h2>
+                        <p style="color: #FFF; font-size: 1.5em; text-transform: uppercase; margin: 0;">
+                            Color: <strong style="color: {% if resultado_color == 'rojo' %}#FF0000{% elif resultado_color == 'verde' %}#00FF00{% else %}#888{% endif %};">{{ resultado_color }}</strong>
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    input, select {
+        width: 100%;
+        padding: 10px;
+        background-color: #000;
+        color: #FFF;
+        border: 2px solid #555;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+    input:focus, select:focus {
+        border-color: #00FFCC;
+        outline: none;
+    }
+    input:disabled, select:disabled {
+        background-color: #222;
+        border-color: #333;
+        color: #555;
+        cursor: not-allowed;
+    }
+
+    .btn-girar-ruleta { transition: transform 0.1s; }
+    .btn-girar-ruleta:hover { background-color: #DD0044 !important; }
+    .btn-girar-ruleta:active { transform: translateY(2px); }
+
+    /* Estilos Ruleta Visual */
+    .ruleta-wheel {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 8px solid #FFF;
+        box-shadow: 0 0 20px #000;
+        box-sizing: border-box;
+        background: repeating-conic-gradient(
+            #FF0000 0deg 18deg,
+            #222222 18deg 36deg
+        );
+        position: relative;
+    }
+    /* El parche verde para el 0 */
+    .ruleta-wheel::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        background: conic-gradient(#00FF00 0deg 18deg, transparent 18deg 360deg);
+    }
+    
+    .ruleta-center {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        width: 120px; height: 120px;
+        background-color: #111;
+        border-radius: 50%;
+        border: 4px solid #FFF;
+        display: flex; justify-content: center; align-items: center;
+        font-size: 3em;
+    }
+
+    /* Puntero decorativo */
+    .ruleta-pointer {
+        position: absolute;
+        top: -15px; left: 50%;
+        transform: translateX(-50%);
+        width: 0; height: 0;
+        border-left: 15px solid transparent;
+        border-right: 15px solid transparent;
+        border-top: 25px solid #00FFCC;
+        z-index: 20;
+    }
+
+    /* Animación Giro de Ruleta */
+    @keyframes spinWheel {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(var(--rotacion-final, 1800deg)); }
+    }
+    .spin-anim {
+        animation: spinWheel 3s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+    }
+
+    /* Ocultar resultado numérico hasta que acabe el giro */
+    @keyframes revealNumber {
+        0%, 90% { opacity: 0; }
+        100% { opacity: 1; }
+    }
+    .resultado-text {
+        animation: revealNumber 3s forwards;
+    }
+
+    /* Ocultar panel de resultado hasta que acabe giro */
+    @keyframes revealPanelDelay {
+        0%, 90% { opacity: 0; transform: scale(0.8); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+    .resultado-animado {
+        animation: revealPanelDelay 3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoSelect = document.getElementById('id_tipo_apuesta');
+        const numeroInput = document.getElementById('id_numero');
+        const colorSelect = document.getElementById('id_color');
+        const form = document.getElementById('ruleta-form');
+        const btnGirar = document.getElementById('btn-girar');
+        const errorTipo = document.getElementById('error-tipo');
+        const errorNumero = document.getElementById('error-numero');
+        const errorColor = document.getElementById('error-color');
+        const errorMonto = document.getElementById('error-monto');
+        const formErrors = document.getElementById('form-errors');
+        const messagesContainer = document.getElementById('messages-container');
+        
+        const ruletaWheel = document.getElementById('ruletaWheel');
+        const resultadoText = document.getElementById('resultado-numero-text');
+        const resultadoPanelContainer = document.getElementById('resultado-panel-container');
+        const inputMontoReal = document.getElementById('monto_apuesta');
+
+        function updateInputs() {
+            if (tipoSelect.value === 'numero') {
+                numeroInput.disabled = false;
+                colorSelect.disabled = true;
+                colorSelect.value = ''; // Limpiar color
+            } else if (tipoSelect.value === 'color') {
+                numeroInput.disabled = true;
+                numeroInput.value = ''; // Limpiar numero
+                colorSelect.disabled = false;
+            } else {
+                numeroInput.disabled = true;
+                colorSelect.disabled = true;
+            }
+        }
+
+        tipoSelect.addEventListener('change', updateInputs);
+        updateInputs(); // Inicializar estado al cargar
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            let apuestaAct = parseInt(inputMontoReal.value) || 0;
+            if (apuestaAct <= 0) {
+                alert("Por favor ingresa una apuesta válida.");
+                return;
+            }
+
+            btnGirar.disabled = true;
+            btnGirar.innerText = "GIRANDO...";
+            
+            // Limpiar errores previos
+            errorTipo.innerText = '';
+            errorNumero.innerText = '';
+            errorColor.innerText = '';
+            errorMonto.innerText = '';
+            formErrors.innerText = '';
+            messagesContainer.innerHTML = '';
+            
+            // Quitar animaciones para reiniciarlas
+            ruletaWheel.classList.remove('spin-anim');
+            resultadoText.classList.remove('resultado-text');
+            resultadoPanelContainer.innerHTML = '';
+            resultadoText.innerText = '?';
+            resultadoText.style.color = '#555';
+
+            const formData = new FormData(form);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.estado === 'error') {
+                    if (data.errores) {
+                        if (data.errores.tipo_apuesta) errorTipo.innerText = data.errores.tipo_apuesta[0];
+                        if (data.errores.numero) errorNumero.innerText = data.errores.numero[0];
+                        if (data.errores.color) errorColor.innerText = data.errores.color[0];
+                        if (data.errores.monto) errorMonto.innerText = data.errores.monto[0];
+                        if (data.errores.__all__) formErrors.innerText = data.errores.__all__[0];
+                    }
+                    if (data.mensajes) {
+                        let msgsHtml = '';
+                        data.mensajes.forEach(msg => {
+                            let bColor = msg.tag.includes('success') ? '#00FF00' : '#FF0000';
+                            msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid ${bColor}; background-color: #111; color: ${bColor}; margin-bottom: 10px;">${msg.texto}</div>`;
+                        });
+                        messagesContainer.innerHTML = msgsHtml;
+                    }
+                    btnGirar.disabled = false;
+                    btnGirar.innerText = "GIRAR RULETA";
+                } else if (data.estado === 'ok') {
+                    // Configurar animación ruleta
+                    ruletaWheel.style.setProperty('--rotacion-final', data.rotacion_total + 'deg');
+                    
+                    // Trigger reflow para reiniciar animación
+                    void ruletaWheel.offsetWidth;
+                    
+                    // Añadir clases de animación
+                    ruletaWheel.classList.add('spin-anim');
+                    resultadoText.classList.add('resultado-text');
+                    
+                    // Preparar colores de texto según resultado
+                    let colorCode = '#FFF';
+                    if (data.resultado_color === 'rojo') colorCode = '#FF0000';
+                    if (data.resultado_color === 'verde') colorCode = '#00FF00';
+                    
+                    if(window.actualizarFichasGlobales) {
+                        window.actualizarFichasGlobales(data.fichas_actuales - data.ganancia);
+                    }
+
+                    // Después de 3 segundos (duración de spinWheel)
+                    setTimeout(() => {
+                        resultadoText.innerText = data.resultado_numero;
+                        resultadoText.style.color = colorCode;
+                        
+                        // Mostrar panel resultado
+                        let dashedColor = data.ganancia > 0 ? '#00FFCC' : '#555';
+                        resultadoPanelContainer.innerHTML = `
+                            <div class="resultado-panel resultado-animado" style="width: 100%; text-align: center; padding: 20px; background-color: #111; border: 4px dashed ${dashedColor}; box-sizing: border-box;">
+                                <h2 style="color: #FFF; margin-top: 0;">Resultado</h2>
+                                <p style="color: #FFF; font-size: 1.5em; text-transform: uppercase; margin: 0;">
+                                    Color: <strong style="color: ${colorCode};">${data.resultado_color}</strong>
+                                </p>
+                            </div>
+                        `;
+                        
+                        // Actualizar saldo de fichas al final del giro
+                        if(window.actualizarFichasGlobales) {
+                            window.actualizarFichasGlobales(data.fichas_actuales);
+                        }
+
+                        // Mostrar mensajes
+                        if (data.mensajes) {
+                            let msgsHtml = '';
+                            data.mensajes.forEach(msg => {
+                                let bColor = msg.tag.includes('success') ? '#00FF00' : '#FF0000';
+                                msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid ${bColor}; background-color: #111; color: ${bColor}; margin-bottom: 10px;">${msg.texto}</div>`;
+                            });
+                            messagesContainer.innerHTML = msgsHtml;
+                        }
+                        
+                        btnGirar.disabled = false;
+                        btnGirar.innerText = "GIRAR RULETA";
+                    }, 3000);
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                btnGirar.disabled = false;
+                btnGirar.innerText = "GIRAR RULETA";
+            });
+        });
+    });
+</script>
+{% endblock %}

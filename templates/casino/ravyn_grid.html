@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="pixel-container" style="max-width: 900px; margin: 0 auto; text-align: center;">
+    <h1 style="color: #AA00FF; text-shadow: 3px 3px 0px #440088; margin-bottom: 20px;">RAVYN GRID (3x3)</h1>
+    
+    <div id="messages-container" style="margin-bottom: 20px;"></div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: flex-start; text-align: left;">
+        
+        <!-- MÁQUINA RAVYN GRID (Pixel Art) -->
+        <div class="machine-casing" style="background-color: #330044; padding: 30px; border: 8px solid #110022; box-shadow: inset 10px 10px 0px rgba(255,255,255,0.1), 10px 10px 0px #000; display: inline-block;">
+            
+            <!-- Pantalla de cristal -->
+            <div class="slot-screen" style="background-color: #111; border: 6px solid #555; padding: 20px; box-shadow: inset 0px 10px 20px #000;">
+                
+                <div id="grid-container" style="display: grid; grid-template-columns: repeat(3, 100px); grid-gap: 15px; background-color: #000; padding: 15px; border: 4px solid #333;">
+                    {% for i in "123456789" %}
+                        <div class="grid-cell" style="width: 100px; height: 100px; background-color: #FFF; border: 4px solid #888; font-size: 3em; position: relative; overflow: hidden; box-shadow: inset 0px 5px 10px rgba(0,0,0,0.3);">
+                            <div id="grid-reel-{{ forloop.counter0 }}" class="grid-reel">
+                                <!-- Símbolos falsos para giro -->
+                                <div class="symbol">🦍</div>
+                                <div class="symbol">🦦</div>
+                                <div class="symbol">🐒</div>
+                                <div class="symbol">🧅</div>
+                                <div class="symbol">🦍</div>
+                                <div class="symbol">🦦</div>
+                                <div class="symbol">🐒</div>
+                                <div class="symbol">🧅</div>
+                                <div class="symbol">🦍</div>
+                                <div class="symbol">🦦</div>
+                                <!-- Símbolo final -->
+                                <div id="final-cell-{{ forloop.counter0 }}" class="symbol final-symbol" style="color: #000; text-shadow: 2px 2px 0px rgba(0,0,0,0.2);">
+                                    {% if resultado %}
+                                        {{ resultado|slice:forloop.counter0|first }}
+                                    {% else %}
+                                        ❓
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div id="highlight-{{ forloop.counter0 }}" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 6px solid transparent; pointer-events: none;"></div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; color: #FFF; font-size: 0.8em; letter-spacing: 2px; text-shadow: 1px 1px 0px #000; text-align: center;">8 WINNING LINES</div>
+        </div>
+
+        <!-- PANEL DE APUESTA Y KEYPAD -->
+        <div class="pixel-panel" style="background-color: #222; border: 4px solid #AA00FF; padding: 20px; width: 280px; box-sizing: border-box;">
+            <h3 style="color: #00FFCC; margin-top: 0; text-align: center;">APUESTA</h3>
+            
+            <form id="ravyn-form" method="post">
+                {% csrf_token %}
+                <div style="margin-bottom: 20px;">
+                    <div id="apuesta-visual" style="background-color: #000; color: #FFF; border: 4px solid #555; padding: 15px 10px; font-size: 2em; text-align: right; overflow: hidden; white-space: nowrap; min-height: 40px; display: flex; align-items: center; justify-content: flex-end;">20</div>
+                    <input type="hidden" id="monto_apuesta" name="monto_apuesta" value="20">
+                </div>
+
+                <!-- KEYPAD -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <button type="button" class="keypad-btn" onclick="addNum('1')">1</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('2')">2</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('3')">3</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('4')">4</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('5')">5</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('6')">6</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('7')">7</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('8')">8</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('9')">9</button>
+                    <button type="button" class="keypad-btn key-c" onclick="clearNum()">C</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('0')">0</button>
+                    <button type="button" class="keypad-btn key-max" onclick="setMax()">MAX</button>
+                </div>
+
+                <button type="submit" id="btn-girar" class="pixel-btn-arcade" style="width: 100%; background-color: #AA00FF;">
+                    INVOCAR
+                </button>
+            </form>
+            
+            <div id="tienda-link-container" style="margin-top: 15px; display: none; text-align: center;">
+                <a href="{% url 'casino:tienda' %}" class="pixel-btn-arcade" style="background-color: #00FFCC; color: #000; font-size: 10px; width: 100%;">TIENDA</a>
+            </div>
+        </div>
+
+    </div>
+
+    <div style="margin-top: 40px; border-top: 2px dashed #555; padding-top: 20px;">
+        <h3 style="color: #AAA;">Multiplicadores (Acumulables en 8 líneas)</h3>
+        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; color: #FFF;">
+            {% for simbolo, valor in multiplicadores.items %}
+                <div style="background-color: #222; padding: 10px; border: 2px solid #444; min-width: 80px;">
+                    <span style="font-size: 1.5em; display: block; margin-bottom: 5px;">{{ simbolo }}</span> x{{ valor }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Rodillos */
+    .grid-reel {
+        display: flex;
+        flex-direction: column;
+        transform: translateY(calc(-100% + 100px));
+    }
+
+    .symbol {
+        width: 100px;
+        height: 100px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    /* Animación Giro de Rodillos (Cascada diagonal) */
+    @keyframes spinGrid {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(calc(-100% + 100px)); }
+    }
+
+    /* Tiempos de animación por celda */
+    .anim-grid-0 { animation: spinGrid 1.0s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-1 { animation: spinGrid 1.2s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-2 { animation: spinGrid 1.4s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-3 { animation: spinGrid 1.2s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-4 { animation: spinGrid 1.4s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-5 { animation: spinGrid 1.6s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-6 { animation: spinGrid 1.4s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-7 { animation: spinGrid 1.6s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+    .anim-grid-8 { animation: spinGrid 1.8s cubic-bezier(0.1, 0.7, 0.1, 1) forwards; }
+
+    /* Parpadeo para líneas ganadoras */
+    @keyframes winPulse {
+        0%, 100% { border-color: #00FF00; box-shadow: inset 0 0 20px #00FF00; }
+        50% { border-color: transparent; box-shadow: inset 0 0 0px transparent; }
+    }
+    .winner-cell {
+        animation: winPulse 0.5s infinite;
+        border-color: #00FF00 !important;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('ravyn-form');
+        const btnGirar = document.getElementById('btn-girar');
+        const messagesContainer = document.getElementById('messages-container');
+        const tiendaLinkContainer = document.getElementById('tienda-link-container');
+        const inputMonto = document.getElementById('monto_apuesta');
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            let apuestaAct = parseInt(inputMonto.value) || 0;
+            if (apuestaAct <= 0) {
+                alert("Por favor ingresa una apuesta válida.");
+                return;
+            }
+
+            btnGirar.disabled = true;
+            btnGirar.innerText = "INVOCANDO...";
+            
+            // Limpiar mensajes
+            messagesContainer.innerHTML = '';
+            tiendaLinkContainer.style.display = 'none';
+
+            // Descuento síncrono
+            const displayFichas = document.getElementById('global-fichas-display');
+            if (displayFichas) {
+                let current = parseInt(displayFichas.getAttribute('data-fichas')) || 0;
+                if(window.actualizarFichasGlobales) window.actualizarFichasGlobales(current - apuestaAct);
+            }
+            
+            // Reiniciar celdas
+            for(let i=0; i<9; i++) {
+                const reel = document.getElementById('grid-reel-' + i);
+                const highlight = document.getElementById('highlight-' + i);
+                reel.classList.remove('anim-grid-' + i);
+                highlight.classList.remove('winner-cell');
+                void reel.offsetWidth; // Reflow
+            }
+
+            const formData = new FormData(form);
+            
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.estado === 'error') {
+                    if (data.mensajes) {
+                        let msgsHtml = '';
+                        data.mensajes.forEach(msg => {
+                            msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid #FF0000; background-color: #111; color: #FF0000; margin-bottom: 10px;">${msg.texto}</div>`;
+                        });
+                        messagesContainer.innerHTML = msgsHtml;
+                    } else if (data.error) {
+                        messagesContainer.innerHTML = `<div class="message-animado" style="padding: 15px; border: 4px solid #FF0000; background-color: #111; color: #FF0000; margin-bottom: 10px;">${data.error}</div>`;
+                    }
+                    
+                    if (data.error === 'Saldo insuficiente') {
+                        tiendaLinkContainer.style.display = 'block';
+                    }
+                    btnGirar.disabled = false;
+                    btnGirar.innerText = "INVOCAR";
+                } else if (data.estado === 'ok') {
+                    
+                    // Iniciar animación y setear resultado final
+                    for(let i=0; i<9; i++) {
+                        const reel = document.getElementById('grid-reel-' + i);
+                        const finalSym = document.getElementById('final-cell-' + i);
+                        finalSym.innerText = data.resultado[i];
+                        reel.classList.add('anim-grid-' + i);
+                    }
+                    
+                    // Tiempo máximo de animación es 1.8s
+                    setTimeout(() => {
+                        // Actualizar saldo final global
+                        if(window.actualizarFichasGlobales) window.actualizarFichasGlobales(data.fichas_actuales);
+                        
+                        // Iluminar líneas ganadoras
+                        if(data.lineas_ganadoras && data.lineas_ganadoras.length > 0) {
+                            data.lineas_ganadoras.forEach(linea => {
+                                linea.forEach(idx => {
+                                    document.getElementById('highlight-' + idx).classList.add('winner-cell');
+                                });
+                            });
+                        }
+                        
+                        // Controlar tienda
+                        if (data.fichas_actuales < apuestaAct) {
+                            tiendaLinkContainer.style.display = 'block';
+                        }
+                        
+                        // Mensajes
+                        if (data.mensajes) {
+                            let msgsHtml = '';
+                            data.mensajes.forEach(msg => {
+                                let bColor = msg.tag.includes('success') ? '#00FF00' : '#FF0000';
+                                msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid ${bColor}; background-color: #111; color: ${bColor}; margin-bottom: 10px;">${msg.texto}</div>`;
+                            });
+                            messagesContainer.innerHTML = msgsHtml;
+                        }
+                        
+                        btnGirar.disabled = false;
+                        btnGirar.innerText = "INVOCAR";
+                    }, 1800);
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                btnGirar.disabled = false;
+                btnGirar.innerText = "INVOCAR";
+            });
+        });
+    });
+</script>
+{% endblock %}

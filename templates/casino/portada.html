@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="pixel-border" style="text-align: center; padding: 50px 20px;">
+    <h2 style="color: var(--pixel-secondary); margin-bottom: 30px;">BIENVENIDO AL LOBBY</h2>
+    
+    <p style="font-size: 14px; margin-bottom: 40px;">¿QUÉ DESEAS HACER HOY?</p>
+
+    <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
+        <a href="{% url 'casino:tienda' %}" class="pixel-btn-arcade" style="width: 300px; background-color: #0088FF;">
+            IR A LA TIENDA
+        </a>
+        
+        <a href="{% url 'casino:ruleta' %}" class="pixel-btn-arcade" style="width: 300px; background-color: #FF0055;">
+            JUGAR PIXEL ROULETTE
+        </a>
+        
+        <a href="{% url 'casino:slots' %}" class="pixel-btn-arcade" style="width: 300px; background-color: #FFD700; color: #000 !important; text-shadow: none;">
+            JUGAR 3-SLOT
+        </a>
+        
+        <a href="{% url 'casino:ravyn' %}" class="pixel-btn-arcade" style="width: 300px; background-color: #AA00FF;">
+            JUGAR RAVYN GRID
+        </a>
+        
+        <a href="{% url 'casino:blackjack' %}" class="pixel-btn-arcade" style="width: 300px; background-color: #00FF66; color: #000 !important; text-shadow: none;">
+            JUGAR BLACKJACK
+        </a>
+    </div>
+
+    <div style="margin-top: 50px; font-size: 10px; color: #888;">
+        RECIBES 500 MONEDAS GRATIS CADA 24 HORAS SOLO POR ENTRAR.
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="pixel-container" style="max-width: 900px; margin: 0 auto; text-align: center;">
+    <h1 style="color: #FF0055; text-shadow: 3px 3px 0px #440011; margin-bottom: 20px;">PIXEL BLACKJACK</h1>
+    
+    <div style="color: #FFF; text-align: center; margin-bottom: 20px; font-size: 1.2em;">
+        Apuesta Actual: <strong id="apuesta-actual-display" style="color: #FFD700;">{{ apuesta_actual }}</strong> fichas
+    </div>
+
+    <div id="messages-container" style="margin-bottom: 20px;"></div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 30px; justify-content: center; align-items: flex-start; text-align: left;">
+        
+        <!-- MESA DE BLACKJACK -->
+        <div class="machine-casing" style="background-color: #008833; padding: 30px; border: 8px solid #004411; box-shadow: inset 10px 10px 0px rgba(255,255,255,0.1), 10px 10px 0px #000; flex: 1; min-width: 400px;">
+            
+            <h3 style="color: #FFF; margin-top: 0; text-align: center; font-size: 1.5em; text-shadow: 2px 2px #000;">DEALER: <span id="puntaje-dealer" style="color: #FFD700;">{% if estado == 'terminado' %}{{ puntaje_dealer }}{% else %}?{% endif %}</span></h3>
+            <div id="mano-dealer" style="display: flex; justify-content: center; gap: 10px; margin-bottom: 40px; min-height: 140px;">
+                {% if mano_dealer %}
+                    <div class="carta carta-dealer" style="color: {% if mano_dealer.0.palo == '♥' or mano_dealer.0.palo == '♦' %}#FF0000{% else %}#000{% endif %};">
+                        <div class="valor-top">{{ mano_dealer.0.valor }}</div>
+                        <div class="palo-center">{{ mano_dealer.0.palo }}</div>
+                        <div class="valor-bottom">{{ mano_dealer.0.valor }}</div>
+                    </div>
+                    {% if estado == 'jugando' %}
+                        <div class="carta carta-oculta" style="background: repeating-linear-gradient(45deg, #111, #111 10px, #333 10px, #333 20px);"></div>
+                    {% else %}
+                        {% for carta in mano_dealer|slice:"1:" %}
+                        <div class="carta carta-dealer" style="color: {% if carta.palo == '♥' or carta.palo == '♦' %}#FF0000{% else %}#000{% endif %};">
+                            <div class="valor-top">{{ carta.valor }}</div>
+                            <div class="palo-center">{{ carta.palo }}</div>
+                            <div class="valor-bottom">{{ carta.valor }}</div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                {% else %}
+                    <div class="carta-placeholder"></div>
+                    <div class="carta-placeholder"></div>
+                {% endif %}
+            </div>
+
+            <h3 style="color: #FFF; margin-top: 0; text-align: center; font-size: 1.5em; text-shadow: 2px 2px #000;">TÚ: <span id="puntaje-jugador" style="color: #00FFCC;">{{ puntaje_jugador }}</span></h3>
+            <div id="mano-jugador" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; min-height: 140px;">
+                {% if mano_jugador %}
+                    {% for carta in mano_jugador %}
+                        <div class="carta" style="color: {% if carta.palo == '♥' or carta.palo == '♦' %}#FF0000{% else %}#000{% endif %};">
+                            <div class="valor-top">{{ carta.valor }}</div>
+                            <div class="palo-center">{{ carta.palo }}</div>
+                            <div class="valor-bottom">{{ carta.valor }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="carta-placeholder"></div>
+                    <div class="carta-placeholder"></div>
+                {% endif %}
+            </div>
+
+            <!-- CONTROLES DEL JUEGO -->
+            <div id="controles-juego" style="margin-top: 30px; display: flex; justify-content: center; gap: 20px; {% if estado != 'jugando' %}display: none;{% endif %}">
+                <form class="bj-action-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="pedir">
+                    <button type="submit" class="pixel-btn-arcade" style="background-color: #0000FF; padding: 15px 30px; font-size: 14px;">HIT (PEDIR)</button>
+                </form>
+                <form class="bj-action-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="plantarse">
+                    <button type="submit" class="pixel-btn-arcade" style="background-color: #FF0000; padding: 15px 30px; font-size: 14px;">STAND (PLANTARSE)</button>
+                </form>
+            </div>
+
+        </div>
+
+        <!-- PANEL DE APUESTA -->
+        <div id="panel-apuesta" class="pixel-panel" style="background-color: #222; border: 4px solid #FF0055; padding: 20px; width: 280px; box-sizing: border-box; {% if estado == 'jugando' %}opacity: 0.5; pointer-events: none;{% endif %}">
+            <h3 style="color: #00FFCC; margin-top: 0; text-align: center;">NUEVA APUESTA</h3>
+            
+            <form class="bj-action-form">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="apostar">
+                <div style="margin-bottom: 20px;">
+                    <div id="apuesta-visual" style="background-color: #000; color: #FFF; border: 4px solid #555; padding: 15px 10px; font-size: 2em; text-align: right; overflow: hidden; white-space: nowrap; min-height: 40px; display: flex; align-items: center; justify-content: flex-end;">20</div>
+                    <input type="hidden" id="monto_apuesta" name="monto_apuesta" value="20">
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <button type="button" class="keypad-btn" onclick="addNum('1')">1</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('2')">2</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('3')">3</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('4')">4</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('5')">5</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('6')">6</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('7')">7</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('8')">8</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('9')">9</button>
+                    <button type="button" class="keypad-btn key-c" onclick="clearNum()">C</button>
+                    <button type="button" class="keypad-btn" onclick="addNum('0')">0</button>
+                    <button type="button" class="keypad-btn key-max" onclick="setMax()">MAX</button>
+                </div>
+
+                <button type="submit" class="pixel-btn-arcade" style="width: 100%; background-color: #FF0055;">
+                    REPARTIR
+                </button>
+            </form>
+            
+            <div id="tienda-link-container" style="margin-top: 15px; display: none; text-align: center;">
+                <a href="{% url 'casino:tienda' %}" class="pixel-btn-arcade" style="background-color: #00FFCC; color: #000; font-size: 10px; width: 100%;">TIENDA</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    /* Cartas (Strict Pixel Art) */
+    .carta {
+        width: 100px;
+        height: 140px;
+        background-color: #FFF;
+        border: 4px solid #000;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+        font-family: Arial, sans-serif;
+        font-weight: bold;
+    }
+    .carta .valor-top { position: absolute; top: 5px; left: 5px; font-size: 1.2em; }
+    .carta .palo-center { font-size: 3em; }
+    .carta .valor-bottom { position: absolute; bottom: 5px; right: 5px; font-size: 1.2em; transform: rotate(180deg); }
+    .carta-placeholder { width: 100px; height: 140px; border: 4px dashed #004411; opacity: 0.5; }
+    
+    @keyframes dealCard {
+        0% { transform: translateY(-200px) rotate(45deg); opacity: 0; }
+        100% { transform: translateY(0) rotate(0); opacity: 1; }
+    }
+    .carta { animation: dealCard 0.4s ease-out forwards; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('.bj-action-form');
+        const messagesContainer = document.getElementById('messages-container');
+        const apuestaActualDisplay = document.getElementById('apuesta-actual-display');
+        const panelApuesta = document.getElementById('panel-apuesta');
+        const controlesJuego = document.getElementById('controles-juego');
+        
+        const manoJugadorDiv = document.getElementById('mano-jugador');
+        const manoDealerDiv = document.getElementById('mano-dealer');
+        const puntajeJugadorSpan = document.getElementById('puntaje-jugador');
+        const puntajeDealerSpan = document.getElementById('puntaje-dealer');
+        const tiendaLinkContainer = document.getElementById('tienda-link-container');
+        const inputMonto = document.getElementById('monto_apuesta');
+
+        function renderCartas(mano, targetDiv, isDealer, estado) {
+            targetDiv.innerHTML = '';
+            if (mano.length === 0) {
+                targetDiv.innerHTML = '<div class="carta-placeholder"></div><div class="carta-placeholder"></div>';
+                return;
+            }
+            
+            mano.forEach((carta, idx) => {
+                let isOculta = isDealer && idx === 1 && estado === 'jugando';
+                let colorCode = (carta.palo === '♥' || carta.palo === '♦') ? '#FF0000' : '#000';
+                
+                if (isOculta) {
+                    targetDiv.innerHTML += `<div class="carta carta-oculta" style="background: repeating-linear-gradient(45deg, #111, #111 10px, #333 10px, #333 20px);"></div>`;
+                } else {
+                    targetDiv.innerHTML += `
+                        <div class="carta" style="color: ${colorCode};">
+                            <div class="valor-top">${carta.valor}</div>
+                            <div class="palo-center">${carta.palo}</div>
+                            <div class="valor-bottom">${carta.valor}</div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        forms.forEach(f => {
+            f.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const accion = f.querySelector('input[name="accion"]').value;
+                if (accion === 'apostar') {
+                    let apuestaAct = parseInt(inputMonto.value) || 0;
+                    if (apuestaAct <= 0) {
+                        alert("Por favor ingresa una apuesta válida.");
+                        return;
+                    }
+                }
+
+                document.querySelectorAll('button').forEach(b => b.disabled = true);
+                messagesContainer.innerHTML = '';
+                tiendaLinkContainer.style.display = 'none';
+
+                if (accion === 'apostar') {
+                    const displayFichas = document.getElementById('global-fichas-display');
+                    let apuestaAct = parseInt(inputMonto.value) || 0;
+                    if (displayFichas) {
+                        let current = parseInt(displayFichas.getAttribute('data-fichas')) || 0;
+                        if(window.actualizarFichasGlobales) window.actualizarFichasGlobales(current - apuestaAct);
+                    }
+                }
+
+                const formData = new FormData(f);
+                
+                fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelectorAll('button').forEach(b => b.disabled = false);
+                    
+                    if (data.estado_req === 'error') {
+                        if (data.mensajes) {
+                            let msgsHtml = '';
+                            data.mensajes.forEach(msg => {
+                                msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid #FF0000; background-color: #111; color: #FF0000; margin-bottom: 10px;">${msg.texto}</div>`;
+                            });
+                            messagesContainer.innerHTML = msgsHtml;
+                        } else if (data.error) {
+                            messagesContainer.innerHTML = `<div class="message-animado" style="padding: 15px; border: 4px solid #FF0000; background-color: #111; color: #FF0000; margin-bottom: 10px;">${data.error}</div>`;
+                        }
+                        if (data.error === 'Saldo insuficiente') {
+                            tiendaLinkContainer.style.display = 'block';
+                        }
+                    } else if (data.estado_req === 'ok') {
+                        let ctx = data.contexto;
+                        
+                        if(window.actualizarFichasGlobales) window.actualizarFichasGlobales(ctx.fichas_actuales);
+                        apuestaActualDisplay.innerText = ctx.apuesta_actual;
+                        
+                        renderCartas(ctx.mano_jugador, manoJugadorDiv, false, ctx.estado);
+                        renderCartas(ctx.mano_dealer, manoDealerDiv, true, ctx.estado);
+                        
+                        puntajeJugadorSpan.innerText = ctx.puntaje_jugador;
+                        puntajeDealerSpan.innerText = ctx.estado === 'terminado' ? ctx.puntaje_dealer : '?';
+                        
+                        if (ctx.estado === 'jugando') {
+                            panelApuesta.style.opacity = '0.5';
+                            panelApuesta.style.pointerEvents = 'none';
+                            controlesJuego.style.display = 'flex';
+                        } else {
+                            panelApuesta.style.opacity = '1';
+                            panelApuesta.style.pointerEvents = 'auto';
+                            controlesJuego.style.display = 'none';
+                        }
+                        
+                        if (data.mensajes) {
+                            let msgsHtml = '';
+                            data.mensajes.forEach(msg => {
+                                let bColor = msg.tag.includes('success') ? '#00FF00' : (msg.tag.includes('info') ? '#FFD700' : '#FF0000');
+                                msgsHtml += `<div class="message-animado" style="padding: 15px; border: 4px solid ${bColor}; background-color: #111; color: ${bColor}; margin-bottom: 10px;">${msg.texto}</div>`;
+                            });
+                            messagesContainer.innerHTML = msgsHtml;
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Error:', err);
+                    document.querySelectorAll('button').forEach(b => b.disabled = false);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

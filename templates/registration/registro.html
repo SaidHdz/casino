@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="pixel-container" style="max-width: 600px; margin: 0 auto;">
+    <div class="pixel-border" style="background-color: #222; text-align: center;">
+        <h2 style="color: #FFD700; margin-bottom: 30px; font-size: 24px;">NUEVA CUENTA</h2>
+        
+        <form method="post" style="display: flex; flex-direction: column; gap: 25px; text-align: left;">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div style="margin-bottom: 10px;">
+                    <label style="color: #00FFCC; display: block; margin-bottom: 8px; font-size: 12px;">{{ field.label|upper }}:</label>
+                    <div style="background: #000; border: 4px solid #555; padding: 10px;">
+                        <input type="{{ field.field.widget.input_type|default:'text' }}" name="{{ field.name }}" required style="width: 100%; background: transparent; color: #FFF; border: none; font-family: inherit; outline: none; font-size: 14px;">
+                    </div>
+                    {% if field.errors %}
+                        <div style="color: #FF0000; font-size: 10px; margin-top: 8px; border: 2px solid #FF0000; padding: 5px; background: #300;">
+                            {{ field.errors }}
+                        </div>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <div style="color: #888; font-size: 9px; margin-top: 8px; line-height: 1.4;">
+                            {{ field.help_text|safe }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="pixel-btn-arcade" style="width: 100%; background-color: #AA00FF; color: #FFF !important; text-shadow: none; margin-top: 10px;">
+                CREAR CUENTA
+            </button>
+        </form>
+
+        <div style="margin-top: 40px; border-top: 4px solid #333; padding-top: 20px;">
+            <p style="font-size: 12px;">
+                ¿YA TIENES CUENTA? <br><br>
+                <a href="{% url 'login' %}" class="pixel-btn-arcade" style="background-color: #00FF66; color: #000 !important; font-size: 12px; width: 250px;">INICIAR SESIÓN</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

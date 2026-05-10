@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RavynCasino - Pixel Art Edition</title>
+    <!-- Google Fonts: Press Start 2P -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pixel-bg: #1a1a1a;
+            --pixel-text: #ffffff;
+            --pixel-primary: #ff0044;
+            --pixel-secondary: #00ff66;
+            --pixel-border: #ffffff;
+            --pixel-shadow: #000000;
+        }
+
+        * {
+            image-rendering: pixelated;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--pixel-bg);
+            color: var(--pixel-text);
+            font-family: 'Press Start 2P', cursive;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* Estilo de borde "escalonado" Pixel Art */
+        .pixel-border {
+            border: 4px solid var(--pixel-border);
+            box-shadow: 
+                4px 0 var(--pixel-shadow),
+                -4px 0 var(--pixel-shadow),
+                0 4px var(--pixel-shadow),
+                0 -4px var(--pixel-shadow);
+            padding: 20px;
+            background-color: #2a2a2a;
+            margin-bottom: 20px;
+        }
+
+        .pixel-button {
+            display: inline-block;
+            padding: 15px 20px;
+            background-color: var(--pixel-primary);
+            color: white;
+            text-decoration: none;
+            border: 4px solid #000;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            box-shadow: inset -4px -4px #a3002b;
+            margin: 5px;
+            transition: transform 0.1s;
+        }
+
+        .pixel-button:active {
+            box-shadow: inset 4px 4px #a3002b;
+            transform: translate(2px, 2px);
+        }
+
+        .pixel-button.secondary {
+            background-color: var(--pixel-secondary);
+            color: #000;
+            box-shadow: inset -4px -4px #00a341;
+        }
+
+        /* Estilo unificado para botones de juego en el Lobby */
+        .pixel-btn-arcade {
+            display: inline-block;
+            padding: 15px 20px;
+            color: #FFF !important;
+            text-decoration: none;
+            border: 4px solid #000;
+            cursor: pointer;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 18px;
+            box-shadow: inset -4px -4px rgba(0,0,0,0.5), inset 4px 4px rgba(255,255,255,0.3);
+            margin: 5px;
+            text-align: center;
+            text-transform: uppercase;
+            transition: transform 0.1s;
+        }
+        .pixel-btn-arcade:active:not(:disabled) {
+            box-shadow: inset 4px 4px rgba(0,0,0,0.5), inset -4px -4px rgba(255,255,255,0.2);
+            transform: translate(2px, 2px);
+        }
+        .pixel-btn-arcade:disabled {
+            background-color: #555 !important;
+            color: #888 !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+
+        .messages {
+            list-style: none;
+            padding: 0;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 2px solid #fff;
+            background: #444;
+        }
+
+        .message.success { border-color: var(--pixel-secondary); color: var(--pixel-secondary); }
+        .message.error { border-color: var(--pixel-primary); color: var(--pixel-primary); }
+
+        /* Estilos Globales Extraidos (Animaciones, Keypad, Paneles) */
+        @keyframes fadeInPanel {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .pixel-container {
+            animation: fadeInPanel 0.4s ease-out forwards;
+        }
+
+        @keyframes dropMessage {
+            0% { transform: translateY(-50px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .message-animado {
+            animation: dropMessage 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Keypad Reutilizable */
+        .keypad-btn {
+            background-color: #444;
+            color: #FFF;
+            border: 4px solid #000;
+            padding: 15px 0;
+            font-family: inherit;
+            font-size: 1.2em;
+            cursor: pointer;
+            box-shadow: inset -4px -4px rgba(0,0,0,0.5), inset 4px 4px rgba(255,255,255,0.3);
+            text-transform: uppercase;
+            transition: transform 0.1s;
+        }
+        .keypad-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: inset 4px 4px rgba(0,0,0,0.5), inset -4px -4px rgba(255,255,255,0.2);
+        }
+        .key-c {
+            background-color: var(--pixel-primary);
+        }
+        .key-max {
+            background-color: #FFD700;
+            color: #000 !important;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 style="color: #AA00FF; text-shadow: 4px 4px #000; font-size: 3em; margin: 0;">RAVYNCASINO</h1>
+        </header>
+
+        {% if user.is_authenticated %}
+        <div class="nav pixel-border" style="background-color: #111;">
+            <div style="line-height: 2;">
+                <span style="color: #888;">JUGADOR:</span> <strong style="color: #FFF;">{{ user.username }}</strong><br>
+                <span style="color: #888;">DINERO:</span> <strong style="color: #00FFCC;" id="global-dinero-display">${{ user.perfil.dinero_ficticio }}</strong> | 
+                <span style="color: #888;">FICHAS:</span> <strong style="color: #FFD700;" id="global-fichas-display" data-fichas="{{ user.perfil.fichas }}">{{ user.perfil.fichas }}</strong>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <a href="{% url 'casino:portada' %}" class="pixel-btn-arcade" style="padding: 10px 20px; font-size: 14px; background-color: #00FF66; color: #000 !important; margin: 0;">LOBBY</a>
+                <form action="{% url 'casino:logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="pixel-btn-arcade" style="padding: 10px 20px; font-size: 14px; background-color: #FF0000; margin: 0;">SALIR</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if messages %}
+        <div class="messages" style="margin-bottom: 20px;">
+            {% for message in messages %}
+                <div class="message-animado" style="padding: 15px; border: 4px solid {% if message.tags == 'success' %}#00FF00{% elif message.tags == 'info' %}#FFD700{% else %}#FF0000{% endif %}; background-color: #111; color: {% if message.tags == 'success' %}#00FF00{% elif message.tags == 'info' %}#FFD700{% else %}#FF0000{% endif %}; margin-bottom: 10px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Scripts Globales (Keypad Reutilizable) -->
+    <script>
+        // Lógica Global del Keypad
+        let apuestaStr = "20";
+        const maxDigits = 6;
+        
+        function updateDisplay() {
+            const apuestaVisual = document.getElementById('apuesta-visual');
+            const inputMonto = document.getElementById('monto_apuesta');
+            if(apuestaVisual && inputMonto) {
+                apuestaVisual.innerText = apuestaStr || "0";
+                inputMonto.value = apuestaStr || "0";
+            }
+        }
+
+        function addNum(numStr) {
+            if (apuestaStr === "0") apuestaStr = "";
+            if (apuestaStr.length < maxDigits) {
+                apuestaStr += numStr;
+                updateDisplay();
+            }
+        }
+
+        function clearNum() {
+            apuestaStr = "0";
+            updateDisplay();
+        }
+
+        function setMax() {
+            const fichasDisplay = document.getElementById('global-fichas-display');
+            if(fichasDisplay) {
+                const fichasStr = fichasDisplay.getAttribute('data-fichas') || fichasDisplay.innerText;
+                apuestaStr = parseInt(fichasStr).toString();
+                if (isNaN(apuestaStr)) apuestaStr = "0";
+                updateDisplay();
+            }
+        }
+
+        // Exponer globalmente para que las vistas actualicen el contador global
+        window.actualizarFichasGlobales = function(fichasActuales) {
+            const display = document.getElementById('global-fichas-display');
+            if(display) {
+                display.innerText = fichasActuales;
+                display.setAttribute('data-fichas', fichasActuales);
+            }
+            // También actualizar cualquier display local que exista (para retrocompatibilidad, aunque los borraremos)
+            const localDisplay = document.getElementById('fichas-display');
+            if(localDisplay) {
+                localDisplay.innerText = 'Fichas: ' + fichasActuales;
+                localDisplay.setAttribute('data-fichas', fichasActuales);
+            }
+        }
+    </script>
+</body>
+</html>

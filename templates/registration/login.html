@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="pixel-container" style="max-width: 500px; margin: 0 auto;">
+    <div class="pixel-border" style="background-color: #222; text-align: center;">
+        <h2 style="color: #AA00FF; margin-bottom: 30px;">INICIAR SESIÓN</h2>
+        
+        <form method="post" style="display: flex; flex-direction: column; gap: 20px; text-align: left;">
+            {% csrf_token %}
+            {% if form.errors %}
+                <div style="color: #FF0000; font-size: 10px; margin-bottom: 10px;">
+                    Usuario o contraseña incorrectos.
+                </div>
+            {% endif %}
+            
+            <div>
+                <label style="color: #00FFCC; display: block; margin-bottom: 10px;">USUARIO:</label>
+                <input type="text" name="username" required style="width: 100%; padding: 10px; background: #000; color: #FFF; border: 4px solid #555; font-family: inherit;">
+            </div>
+            
+            <div>
+                <label style="color: #00FFCC; display: block; margin-bottom: 10px;">CONTRASEÑA:</label>
+                <input type="password" name="password" required style="width: 100%; padding: 10px; background: #000; color: #FFF; border: 4px solid #555; font-family: inherit;">
+            </div>
+
+            <button type="submit" class="pixel-btn-arcade" style="width: 100%; background-color: #00FF66; color: #000 !important; text-shadow: none;">
+                ENTRAR
+            </button>
+        </form>
+
+        <p style="margin-top: 30px; font-size: 10px;">
+            ¿NO TIENES CUENTA? <a href="{% url 'casino:registro' %}" style="color: #FFD700;">REGÍSTRATE AQUÍ</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

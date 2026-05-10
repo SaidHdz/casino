@@ -1,0 +1,9 @@
+from django.apps import AppConfig
+
+
+class CasinoConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'casino'
+
+    def ready(self):
+        import casino.signals
