@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-z$7wpgp%_b58*k05hyuc6hr^e!j_fj$foac@l16prh(e3ay4-@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['.fly.dev', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['.fly.dev', '.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -143,3 +143,5 @@ LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
 
 CSRF_TRUSTED_ORIGINS = ['https://*.fly.dev']
+r.com']
+
