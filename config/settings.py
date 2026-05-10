@@ -72,6 +72,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
+import dj_database_url
+import os
+
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -81,6 +84,14 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Si estamos en Render, usamos PostgreSQL
+if os.environ.get('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
+
 
 
 # Password validation
