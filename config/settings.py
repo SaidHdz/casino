@@ -51,7 +51,6 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -132,8 +131,4 @@ LOGIN_REDIRECT_URL = 'casino:portada'
 LOGOUT_REDIRECT_URL = 'login'
 LOGIN_URL = 'login'
 
-
-]
-
-
-
+CSRF_TRUSTED_ORIGINS = ['https://*.fly.dev']
