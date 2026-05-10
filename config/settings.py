@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-z$7wpgp%_b58*k05hyuc6hr^e!j_fj$foac@l16prh(e3ay4-@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['casino-ravyn.fly.dev', 'localhost', '127.0.0.1']
 
 
 # Application definition
